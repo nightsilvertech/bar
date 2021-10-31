@@ -34,7 +34,7 @@ func NewBarEndpoint(svc _interface.BarService) BarEndpoint {
 	{
 		const name = `DeleteBar`
 		deleteBarEp = makeDeleteBarEndpoint(svc)
-		deleteBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(editBarEp)
+		deleteBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(deleteBarEp)
 	}
 
 	var getAllBarEp endpoint.Endpoint

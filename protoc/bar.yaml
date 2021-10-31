@@ -19,6 +19,6 @@ http:
       # get all bar selector
     - selector: api.v1.BarService.GetAllBar
       get: /v1/bar/all
-
+      # get detail bar selector
     - selector: api.v1.BarService.GetDetailBar
       get: /v1/bar/detail/{id}

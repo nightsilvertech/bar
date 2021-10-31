@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/nightsilvertech/bar/constant"
 	ep "github.com/nightsilvertech/bar/endpoint"
+	"github.com/nightsilvertech/bar/gvar"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	"github.com/nightsilvertech/bar/repository"
 	"github.com/nightsilvertech/bar/service"
 	"github.com/nightsilvertech/bar/transport"
+	"github.com/nightsilvertech/bar/util"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -59,8 +62,14 @@ func MergeServer(service pb.BarServiceServer, serverOptions []grpc.ServerOption)
 }
 
 func main() {
-	repositories := *repository.NewRepository()
-	services := service.NewService(repositories)
+	gvar.Logger = util.CreateStdGoKitLog(constant.ServiceName, false)
+
+	repositories, err := repository.NewRepository()
+	if err != nil {
+		panic(err)
+	}
+
+	services := service.NewService(*repositories)
 	endpoints := ep.NewBarEndpoint(services)
 	server := transport.NewBarServer(endpoints)
 	MergeServer(server, nil)

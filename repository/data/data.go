@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/repository/interface"
 	"github.com/nightsilvertech/bar/util"
@@ -51,7 +52,11 @@ func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar
 
 	currentTime := time.Now()
 	req.UpdatedAt = currentTime.Unix()
-	stmt, err := d.db.Prepare(``)
+	stmt, err := d.db.Prepare(`
+	UPDATE bars
+	SET name = ?, description = ?
+	WHERE id = ?
+	`)
 	if err != nil {
 		return res, util.Wrap(funcName, "db.Prepare", err)
 	}
@@ -59,7 +64,7 @@ func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar
 		ctx,
 		req.Name,        // name
 		req.Description, // description
-		currentTime,     // updated_at
+		req.Id,          // id
 	)
 	if err != nil {
 		return res, util.Wrap(funcName, "stmt.ExecContext", err)
@@ -73,7 +78,7 @@ func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar
 func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `RemoveBar`
 
-	stmt, err := d.db.Prepare(``)
+	stmt, err := d.db.Prepare(`DELETE FROM bars WHERE id = ?`)
 	if err != nil {
 		return res, util.Wrap(funcName, "db.Prepare", err)
 	}
@@ -90,15 +95,15 @@ func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.
 	return res, nil
 }
 
-func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
+func (d *dataReadWrite) ReadDetailBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `ReadDetailBar`
 
-	stmt, err := d.db.Prepare(``)
+	stmt, err := d.db.Prepare(`SELECT * FROM bars WHERE id = ?`)
 	if err != nil {
 		return res, util.Wrap(funcName, "db.Prepare", err)
 	}
 	mutex.Lock()
-	row := stmt.QueryRow(ctx)
+	row := stmt.QueryRowContext(ctx, selects.Id)
 	mutex.Unlock()
 
 	var bar pb.Bar
@@ -113,13 +118,15 @@ func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res 
 	if err != nil {
 		return res, util.Wrap(funcName, "row.Scan", err)
 	}
+	bar.CreatedAt = createdAt.Unix()
+	bar.UpdatedAt = updatedAt.Unix()
 	return &bar, nil
 }
 
 func (d *dataReadWrite) ReadAllBar(ctx context.Context, req *pb.Pagination) (res *pb.Bars, err error) {
 	const funcName = `ReadAllBar`
 
-	stmt, err := d.db.Prepare(``)
+	stmt, err := d.db.Prepare(`SELECT * FROM bars ORDER BY created_at DESC`)
 	if err != nil {
 		return res, util.Wrap(funcName, "db.Prepare", err)
 	}
@@ -129,6 +136,7 @@ func (d *dataReadWrite) ReadAllBar(ctx context.Context, req *pb.Pagination) (res
 		return res, util.Wrap(funcName, "stmt.QueryContext", err)
 	}
 	mutex.Unlock()
+	defer row.Close()
 
 	var bars pb.Bars
 	var bar pb.Bar
