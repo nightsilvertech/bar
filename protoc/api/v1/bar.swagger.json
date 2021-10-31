@@ -1,0 +1,86 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "bar.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "BarService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "typeUrl": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Bar": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Example for single data"
+    },
+    "v1Bars": {
+      "type": "object",
+      "properties": {
+        "bars": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Bar"
+          }
+        }
+      },
+      "title": "Example for many data"
+    }
+  }
+}

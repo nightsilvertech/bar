@@ -1,0 +1,24 @@
+# this yaml file is for define endpoint that
+# will be used by grpc gateway for proxying
+# from grpc to rest api
+type: google.api.Service
+config_version: 3
+http:
+  rules:
+      # add bar selector
+    - selector: api.v1.BarService.AddBar
+      post: /v1/bar
+      body: "*"
+      # edit bar selector
+    - selector: api.v1.BarService.EditBar
+      put: /v1/bar/{id}
+      body: "*"
+      # delete bar selector
+    - selector: api.v1.BarService.DeleteBar
+      delete: /v1/bar/{id}
+      # get all bar selector
+    - selector: api.v1.BarService.GetAllBar
+      get: /v1/bar/all
+
+    - selector: api.v1.BarService.GetDetailBar
+      get: /v1/bar/detail/{id}
