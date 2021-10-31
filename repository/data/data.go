@@ -3,9 +3,12 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/repository/interface"
+	"github.com/nightsilvertech/bar/util"
 	"sync"
+	"time"
 )
 
 var mutex = &sync.RWMutex{}
@@ -15,27 +18,160 @@ type dataReadWrite struct {
 }
 
 func (d *dataReadWrite) WriteBar(ctx context.Context, req *pb.Bar) (res *pb.Bar, err error) {
-	panic("implement me")
+	const funcName = `WriteBar`
+
+	currentTime := time.Now()
+	req.CreatedAt = currentTime.Unix()
+	req.UpdatedAt = currentTime.Unix()
+	stmt, err := d.db.Prepare(`
+	INSERT INTO bars(id, name, description, created_at, updated_at) VALUES (?,?,?,?,?)
+	`)
+	if err != nil {
+		return res, util.Wrap(funcName, "db.Prepare", err)
+	}
+	result, err := stmt.ExecContext(
+		ctx,
+		req.Id,          // id
+		req.Name,        // name
+		req.Description, // description
+		currentTime,     // created_at
+		currentTime,     // updated_at
+	)
+	if err != nil {
+		return res, util.Wrap(funcName, "stmt.ExecContext", err)
+	}
+	if affected, err := result.RowsAffected(); affected == 0 || err != nil {
+		return res, util.Wrap(funcName, "result.RowsAffected", err)
+	}
+	return req, nil
 }
 
 func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar, err error) {
-	panic("implement me")
+	const funcName = `ModifyBar`
+
+	currentTime := time.Now()
+	req.UpdatedAt = currentTime.Unix()
+	stmt, err := d.db.Prepare(``)
+	if err != nil {
+		return res, util.Wrap(funcName, "db.Prepare", err)
+	}
+	result, err := stmt.ExecContext(
+		ctx,
+		req.Name,        // name
+		req.Description, // description
+		currentTime,     // updated_at
+	)
+	if err != nil {
+		return res, util.Wrap(funcName, "stmt.ExecContext", err)
+	}
+	if affected, err := result.RowsAffected(); affected == 0 || err != nil {
+		return res, util.Wrap(funcName, "result.RowsAffected", err)
+	}
+	return req, nil
 }
 
 func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
-	panic("implement me")
+	const funcName = `RemoveBar`
+
+	stmt, err := d.db.Prepare(``)
+	if err != nil {
+		return res, util.Wrap(funcName, "db.Prepare", err)
+	}
+	result, err := stmt.ExecContext(
+		ctx,
+		req.Id, // id
+	)
+	if err != nil {
+		return res, util.Wrap(funcName, "stmt.ExecContext", err)
+	}
+	if affected, err := result.RowsAffected(); affected == 0 || err != nil {
+		return res, util.Wrap(funcName, "result.RowsAffected", err)
+	}
+	return res, nil
 }
 
 func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
-	panic("implement me")
+	const funcName = `ReadDetailBar`
+
+	stmt, err := d.db.Prepare(``)
+	if err != nil {
+		return res, util.Wrap(funcName, "db.Prepare", err)
+	}
+	mutex.Lock()
+	row := stmt.QueryRow(ctx)
+	mutex.Unlock()
+
+	var bar pb.Bar
+	var createdAt, updatedAt time.Time
+	err = row.Scan(
+		&bar.Id,          // id
+		&bar.Name,        // name
+		&bar.Description, // description
+		&createdAt,       // created_at
+		&updatedAt,       // updated_at
+	)
+	if err != nil {
+		return res, util.Wrap(funcName, "row.Scan", err)
+	}
+	return &bar, nil
 }
 
 func (d *dataReadWrite) ReadAllBar(ctx context.Context, req *pb.Pagination) (res *pb.Bars, err error) {
-	panic("implement me")
+	const funcName = `ReadAllBar`
+
+	stmt, err := d.db.Prepare(``)
+	if err != nil {
+		return res, util.Wrap(funcName, "db.Prepare", err)
+	}
+	mutex.Lock()
+	row, err := stmt.QueryContext(ctx)
+	if err != nil {
+		return res, util.Wrap(funcName, "stmt.QueryContext", err)
+	}
+	mutex.Unlock()
+
+	var bars pb.Bars
+	var bar pb.Bar
+	var createdAt, updatedAt time.Time
+	for row.Next() {
+		err = row.Scan(
+			&bar.Id,          // id
+			&bar.Name,        // name
+			&bar.Description, // description
+			&createdAt,       // created_at
+			&updatedAt,       // updated_at
+		)
+		if err != nil {
+			return res, util.Wrap(funcName, "row.Scan", err)
+		}
+		bars.Bars = append(bars.Bars, &pb.Bar{
+			Id:          bar.Id,
+			Name:        bar.Name,
+			Description: bar.Description,
+			CreatedAt:   createdAt.Unix(),
+			UpdatedAt:   updatedAt.Unix(),
+		})
+	}
+	return &bars, nil
 }
 
-func NewDataReadWriter() _interface.DRW {
-	return &dataReadWrite{
+func NewDataReadWriter(username, password, host, port, name string) (_interface.DRW, error) {
+	const funcName = `NewDataReadWriter`
 
+	databaseUrl := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		username,
+		password,
+		host,
+		port,
+		name,
+	)
+	db, err := sql.Open("mysql", databaseUrl)
+	if err != nil {
+		return nil, util.Wrap(funcName, "sql.Open", err)
 	}
+
+	return &dataReadWrite{
+		db: db,
+	}, nil
 }

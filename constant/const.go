@@ -1,4 +1,4 @@
-package _const
+package constant
 
 const (
 	ServiceName = `foo`
