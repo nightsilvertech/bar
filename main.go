@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/nightsilvertech/bar/constant"
+	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
+
 	ep "github.com/nightsilvertech/bar/endpoint"
 	"github.com/nightsilvertech/bar/gvar"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
@@ -12,7 +15,9 @@ import (
 	"github.com/nightsilvertech/bar/service"
 	"github.com/nightsilvertech/bar/transport"
 	"github.com/nightsilvertech/bar/util"
+	"github.com/openzipkin/zipkin-go"
 	"github.com/soheilhy/cmux"
+	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"log"
@@ -63,6 +68,12 @@ func MergeServer(service pb.BarServiceServer, serverOptions []grpc.ServerOption)
 
 func main() {
 	gvar.Logger = util.CreateStdGoKitLog(constant.ServiceName, false)
+
+	reporter := httpreporter.NewReporter("http://localhost:9411/api/v2/spans")
+	localEndpoint, _ := zipkin.NewEndpoint(constant.ServiceName, "http://localhost:0")
+	exporter := oczipkin.NewExporter(reporter, localEndpoint)
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
+	trace.RegisterExporter(exporter)
 
 	repositories, err := repository.NewRepository()
 	if err != nil {

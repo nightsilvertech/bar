@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"github.com/nightsilvertech/bar/gvar"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_repo "github.com/nightsilvertech/bar/repository"
 	_interface "github.com/nightsilvertech/bar/service/interface"
+	"github.com/nightsilvertech/bar/util"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -35,6 +37,8 @@ func (s service) GetDetailBar(ctx context.Context, selects *pb.Select) (*pb.Bar,
 
 func (s service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (*pb.Bars, error) {
 	const funcName = `GetAllBar`
+	console := util.ConsoleLog(gvar.Logger)
+	console.Log("test", "helo")
 	return s.repo.Data.ReadAllBar(ctx, pagination)
 }
 

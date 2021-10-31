@@ -1,5 +1,5 @@
 package constant
 
 const (
-	ServiceName = `foo`
+	ServiceName = `bar`
 )
