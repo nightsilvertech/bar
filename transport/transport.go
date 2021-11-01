@@ -6,9 +6,11 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	ep "github.com/nightsilvertech/bar/endpoint"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
+	"github.com/nightsilvertech/utl/pass"
 )
 
 type grpcBarServer struct {
+	pb.UnimplementedBarServiceServer
 	addBar       grpctransport.Handler
 	editBar      grpctransport.Handler
 	deleteBar    grpctransport.Handler
@@ -16,11 +18,11 @@ type grpcBarServer struct {
 	getDetailBar grpctransport.Handler
 }
 
-func decodeRequest(_ context.Context, request interface{}) (interface{}, error) {
+func decodeRequest(ctx context.Context, request interface{}) (interface{}, error) {
 	return request, nil
 }
 
-func encodeResponse(_ context.Context, response interface{}) (interface{}, error) {
+func encodeResponse(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }
 
@@ -68,6 +70,21 @@ func (g *grpcBarServer) GetDetailBar(ctx context.Context, selects *pb.Select) (*
 func NewBarServer(endpoints ep.BarEndpoint) pb.BarServiceServer {
 	options := []grpctransport.ServerOption{
 		kitoc.GRPCServerTrace(),
+		grpctransport.ServerBefore(
+			pass.ExtractAuthToken,
+		),
+		grpctransport.ServerBefore(
+			pass.DisplayServerRequestHeaders,
+		),
+		grpctransport.ServerAfter(
+			pass.InjectResponseHeader,
+			pass.InjectResponseTrailer,
+			pass.InjectConsumedCorrelationID,
+		),
+		grpctransport.ServerAfter(
+			pass.DisplayServerResponseHeaders,
+			pass.DisplayServerResponseTrailers,
+		),
 	}
 	return &grpcBarServer{
 		addBar: grpctransport.NewServer(

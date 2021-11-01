@@ -2,26 +2,27 @@ package transport
 
 import (
 	"context"
-	grpcgoogle "google.golang.org/grpc"
 	"github.com/go-kit/kit/endpoint"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	ep "github.com/nightsilvertech/bar/endpoint"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/service/interface"
+	"github.com/nightsilvertech/utl/pass"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
+	grpcgoogle "google.golang.org/grpc"
 )
 
-func encodeRequest(_ context.Context, request interface{}) (interface{}, error) {
+func encodeRequest(ctx context.Context, request interface{}) (interface{}, error) {
 	return request, nil
 }
 
-func decodeResponse(_ context.Context, response interface{}) (interface{}, error) {
+func decodeResponse(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }
 
-func DialBarService(ctx context.Context, hostAndPort string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
+func DialBarService(hostAndPort string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
 		return nil, nil, err
 	}
@@ -29,7 +30,7 @@ func DialBarService(ctx context.Context, hostAndPort string) (_interface.BarServ
 		grpcgoogle.WithInsecure(),
 		grpcgoogle.WithStatsHandler(new(ocgrpc.ClientHandler)),
 	}
-	conn, err := grpcgoogle.DialContext(ctx, hostAndPort, dialOptions...)
+	conn, err := grpcgoogle.Dial(hostAndPort, dialOptions...)
 	if err != nil {
 		panic(err)
 	}
@@ -40,8 +41,8 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 	var addBarEp endpoint.Endpoint
 	{
 		const (
-			rpcName   = `api.v1.ProgramService`
-			rpcMethod = `AddProgram`
+			rpcName   = `api.v1.BarService`
+			rpcMethod = `AddBar`
 		)
 
 		addBarEp = grpctransport.NewClient(
@@ -51,6 +52,19 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			encodeRequest,
 			decodeResponse,
 			pb.Bar{},
+			grpctransport.ClientBefore(
+				pass.InjectAuthToken,
+			),
+			grpctransport.ClientBefore(
+				pass.DisplayClientRequestHeaders,
+			),
+			grpctransport.ClientAfter(
+				pass.DisplayClientResponseHeaders,
+				pass.DisplayClientResponseTrailers,
+			),
+			grpctransport.ClientAfter(
+				pass.ExtractConsumedCorrelationID,
+			),
 		).Endpoint()
 	}
 	return &ep.BarEndpoint{

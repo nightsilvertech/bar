@@ -17,7 +17,7 @@ func makeAddBarEndpoint(usecase _interface.BarService) endpoint.Endpoint {
 func (e BarEndpoint) AddBar(ctx context.Context, req *pb.Bar) (*pb.Bar, error) {
 	res, err := e.AddBarEndpoint(ctx, req)
 	if err != nil {
-		return res.(*pb.Bar), err
+		return &pb.Bar{}, err
 	}
 	return res.(*pb.Bar), nil
 }

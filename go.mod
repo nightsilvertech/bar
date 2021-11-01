@@ -13,13 +13,19 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/soheilhy/cmux v0.1.5
 	go.opencensus.io v0.23.0
+	github.com/nightsilvertech/utl v0.0.0-20211031131457-723f23e3bc64
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/grpc v1.41.0
 	google.golang.org/protobuf v1.27.1
 )
 
+replace (
+	github.com/nightsilvertech/utl v0.0.0-20211031131457-723f23e3bc64 => /home/stoic/Go/src/github.com/nightsilvertech/utl
+)
+
 require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/smartystreets/goconvey v1.7.2 // indirect
