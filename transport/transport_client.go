@@ -7,7 +7,7 @@ import (
 	ep "github.com/nightsilvertech/bar/endpoint"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/service/interface"
-	"github.com/nightsilvertech/utl/pass"
+	"github.com/nightsilvertech/utl/console"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
@@ -53,17 +53,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			decodeResponse,
 			pb.Bar{},
 			grpctransport.ClientBefore(
-				pass.InjectAuthToken,
-			),
-			grpctransport.ClientBefore(
-				pass.DisplayClientRequestHeaders,
-			),
-			grpctransport.ClientAfter(
-				pass.DisplayClientResponseHeaders,
-				pass.DisplayClientResponseTrailers,
-			),
-			grpctransport.ClientAfter(
-				pass.ExtractConsumedCorrelationID,
+				console.ContextToRequestIDMetadata(),
 			),
 		).Endpoint()
 	}

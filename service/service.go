@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"github.com/go-kit/kit/log/level"
+	"github.com/nightsilvertech/bar/gvar"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_repo "github.com/nightsilvertech/bar/repository"
 	_interface "github.com/nightsilvertech/bar/service/interface"
+	"github.com/nightsilvertech/utl/console"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -14,7 +17,15 @@ type service struct {
 
 func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (*pb.Bar, error) {
 	const funcName = `AddBar`
+
+	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
+
+	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, bar)
+
 	bar.Id = uuid.NewV4().String()
+
+	level.Info(consoleLog).Log(console.LogInfo, "downer")
+
 	return s.repo.Data.WriteBar(ctx, bar)
 }
 
