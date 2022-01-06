@@ -8,10 +8,12 @@ import (
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/service/interface"
 	"github.com/nightsilvertech/utl/console"
+	"github.com/nightsilvertech/utl/jsonwebtoken"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
 	grpcgoogle "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func encodeRequest(ctx context.Context, request interface{}) (interface{}, error) {
@@ -23,11 +25,19 @@ func decodeResponse(ctx context.Context, response interface{}) (interface{}, err
 }
 
 func DialBarService(hostAndPort string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
+	tlsCredentials, err := credentials.NewClientTLSFromFile(
+		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
+		"0.0.0.0",
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
 		return nil, nil, err
 	}
 	dialOptions := []grpcgoogle.DialOption{
-		grpcgoogle.WithInsecure(),
+		grpcgoogle.WithTransportCredentials(tlsCredentials),
 		grpcgoogle.WithStatsHandler(new(ocgrpc.ClientHandler)),
 	}
 	conn, err := grpcgoogle.Dial(hostAndPort, dialOptions...)
@@ -54,6 +64,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			pb.Bar{},
 			grpctransport.ClientBefore(
 				console.ContextToRequestIDMetadata(),
+				jsonwebtoken.ContextToBearerTokenMetadata(),
 			),
 		).Endpoint()
 	}

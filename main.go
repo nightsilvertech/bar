@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
-	"fmt"
+	"crypto/tls"
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/go-kit/log/level"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -17,59 +17,74 @@ import (
 	"github.com/nightsilvertech/utl/console"
 	"github.com/openzipkin/zipkin-go"
 	httpreporter "github.com/openzipkin/zipkin-go/reporter/http"
-	"github.com/soheilhy/cmux"
 	"go.opencensus.io/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"net"
 	"net/http"
 )
 
-func ServeGRPC(listener net.Listener, service pb.BarServiceServer, serverOptions []grpc.ServerOption) error {
+const address = `localhost:1900`
+const grpcAddress = `localhost:9081`
+const httpAddress = `localhost:8081`
+
+func ServeGRPC(service pb.BarServiceServer, serverOptions []grpc.ServerOption) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving grpc server")
 
-	var grpcServer *grpc.Server
-	if len(serverOptions) > 0 {
-		grpcServer = grpc.NewServer(serverOptions...)
-	} else {
-		grpcServer = grpc.NewServer()
+	listener, err := net.Listen("tcp", grpcAddress)
+	if err != nil {
+		return err
 	}
+
+	grpcServer := grpc.NewServer(serverOptions...)
 	pb.RegisterBarServiceServer(grpcServer, service)
 	return grpcServer.Serve(listener)
 }
 
-func ServeHTTP(listener net.Listener, service pb.BarServiceServer) error {
+func ServeHTTP(service pb.BarServiceServer, clientOption []grpc.DialOption) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving http server")
 
 	mux := runtime.NewServeMux()
-	err := pb.RegisterBarServiceHandlerServer(context.Background(), mux, service)
+	pb.RegisterBarServiceServer(grpc.NewServer(), service)
+	err := pb.RegisterBarServiceHandlerFromEndpoint(context.Background(), mux, address, clientOption)
 	if err != nil {
 		return err
 	}
-	return http.Serve(listener, mux)
+	return http.ListenAndServe(":8081", mux)
 }
 
-func MergeServer(service pb.BarServiceServer, serverOptions []grpc.ServerOption) {
-	level.Info(gvar.Logger).Log(console.LogInfo, "service started")
-
-	port := fmt.Sprintf(":%s", "1900")
-	listener, err := net.Listen("tcp", port)
+func Serve(service pb.BarServiceServer, useTls bool) {
+	serverCert, err := tls.LoadX509KeyPair(
+		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
+		"C:\\Users\\Asus\\Desktop\\tls\\server.key")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	m := cmux.New(listener)
-	grpcListener := m.MatchWithWriters(cmux.HTTP2MatchHeaderFieldSendSettings(
-		"content-type", "application/grpc",
-	))
-	httpListener := m.Match(cmux.HTTP1Fast())
+	clientCert, err := credentials.NewClientTLSFromFile(
+		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
+		"localhost",
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	var serverOpts []grpc.ServerOption
+	var clientOpts []grpc.DialOption
+
+	if useTls {
+		serverOpts = []grpc.ServerOption{grpc.Creds(credentials.NewServerTLSFromCert(&serverCert))}
+		clientOpts = []grpc.DialOption{grpc.WithTransportCredentials(clientCert)}
+	} else {
+		serverOpts = []grpc.ServerOption{}
+		clientOpts = []grpc.DialOption{grpc.WithInsecure()}
+	}
 
 	g := new(errgroup.Group)
-	g.Go(func() error { return ServeGRPC(grpcListener, service, serverOptions) })
-	g.Go(func() error { return ServeHTTP(httpListener, service) })
-	g.Go(func() error { return m.Serve() })
-
+	g.Go(func() error { return ServeGRPC(service, serverOpts) })
+	g.Go(func() error { return ServeHTTP(service, clientOpts) })
 	log.Fatal(g.Wait())
 }
 
@@ -91,5 +106,6 @@ func main() {
 	services := service.NewService(*repositories, tracer)
 	endpoints := ep.NewBarEndpoint(services)
 	server := transport.NewBarServer(endpoints)
-	MergeServer(server, nil)
+
+	Serve(server, true)
 }

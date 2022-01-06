@@ -7,6 +7,7 @@ import (
 	ep "github.com/nightsilvertech/bar/endpoint"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	"github.com/nightsilvertech/utl/console"
+	"github.com/nightsilvertech/utl/jsonwebtoken"
 )
 
 type grpcBarServer struct {
@@ -71,6 +72,7 @@ func NewBarServer(endpoints ep.BarEndpoint) pb.BarServiceServer {
 		kitoc.GRPCServerTrace(),
 		grpctransport.ServerBefore(
 			console.RequestIDMetadataToContext(),
+			jsonwebtoken.BearerTokenMetadataToContext(),
 		),
 	}
 	return &grpcBarServer{
