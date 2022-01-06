@@ -9,14 +9,20 @@ import (
 	_interface "github.com/nightsilvertech/bar/service/interface"
 	"github.com/nightsilvertech/utl/console"
 	uuid "github.com/satori/go.uuid"
+	"go.opencensus.io/trace"
 )
 
 type service struct {
-	repo _repo.Repository
+	tracer trace.Tracer
+	repo   _repo.Repository
 }
 
 func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (*pb.Bar, error) {
 	const funcName = `AddBar`
+	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	defer span.End()
+
+	span.SetStatus(trace.Status{Code: int32(trace.StatusCodeNotFound), Message: "Cache miss"})
 
 	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
 
@@ -49,8 +55,9 @@ func (s *service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (*pb
 	return s.repo.Data.ReadAllBar(ctx, pagination)
 }
 
-func NewService(repo _repo.Repository) _interface.BarService {
+func NewService(repo _repo.Repository, tracer trace.Tracer) _interface.BarService {
 	return &service{
-		repo: repo,
+		tracer: tracer,
+		repo:   repo,
 	}
 }

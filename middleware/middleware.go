@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -51,7 +52,7 @@ func CircuitBreakerMiddleware(command string) endpoint.Middleware {
 			if err != nil {
 				return nil, status.Error(
 					codes.Unavailable,
-					errors.New("service is busy or unavailable, please try again later").Error(),
+					errors.New(fmt.Sprintf( "service %s is busy or unavailable, please try again later", command)).Error(),
 				)
 			}
 			return resp, nil

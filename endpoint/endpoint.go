@@ -2,9 +2,10 @@ package endpoint
 
 import (
 	"github.com/go-kit/kit/endpoint"
+	kitoc "github.com/go-kit/kit/tracing/opencensus"
 	"github.com/nightsilvertech/bar/constant"
-	"github.com/nightsilvertech/bar/middleware"
 	_interface "github.com/nightsilvertech/bar/service/interface"
+	"github.com/nightsilvertech/utl/middlewares"
 )
 
 type BarEndpoint struct {
@@ -20,35 +21,40 @@ func NewBarEndpoint(svc _interface.BarService) BarEndpoint {
 	{
 		const name = `AddBar`
 		addBarEp = makeAddBarEndpoint(svc)
-		addBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(addBarEp)
+		addBarEp = middlewares.CircuitBreakerMiddleware(constant.ServiceName)(addBarEp)
+		addBarEp = kitoc.TraceEndpoint(name)(addBarEp)
 	}
 
 	var editBarEp endpoint.Endpoint
 	{
 		const name = `EditBar`
 		editBarEp = makeEditBarEndpoint(svc)
-		editBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(editBarEp)
+		editBarEp = middlewares.CircuitBreakerMiddleware(constant.ServiceName)(editBarEp)
+		editBarEp = kitoc.TraceEndpoint(name)(editBarEp)
 	}
 
 	var deleteBarEp endpoint.Endpoint
 	{
 		const name = `DeleteBar`
 		deleteBarEp = makeDeleteBarEndpoint(svc)
-		deleteBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(deleteBarEp)
+		deleteBarEp = middlewares.CircuitBreakerMiddleware(constant.ServiceName)(deleteBarEp)
+		deleteBarEp = kitoc.TraceEndpoint(name)(deleteBarEp)
 	}
 
 	var getAllBarEp endpoint.Endpoint
 	{
 		const name = `GetAllBar`
 		getAllBarEp = makeGetAllBarEndpoint(svc)
-		getAllBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(getAllBarEp)
+		getAllBarEp = middlewares.CircuitBreakerMiddleware(constant.ServiceName)(getAllBarEp)
+		getAllBarEp = kitoc.TraceEndpoint(name)(getAllBarEp)
 	}
 
 	var getDetailBarEp endpoint.Endpoint
 	{
 		const name = `GetDetailBar`
 		getDetailBarEp = makeGetDetailBarEndpoint(svc)
-		getDetailBarEp = middleware.CircuitBreakerMiddleware(constant.ServiceName)(getDetailBarEp)
+		getDetailBarEp = middlewares.CircuitBreakerMiddleware(constant.ServiceName)(getDetailBarEp)
+		getDetailBarEp = kitoc.TraceEndpoint(name)(getDetailBarEp)
 	}
 
 	return BarEndpoint{

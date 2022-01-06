@@ -32,7 +32,7 @@ func DialBarService(hostAndPort string) (_interface.BarService, *grpcgoogle.Clie
 	}
 	conn, err := grpcgoogle.Dial(hostAndPort, dialOptions...)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	return newGRPBarClient(conn), conn, nil
 }

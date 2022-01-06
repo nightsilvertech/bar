@@ -10,7 +10,7 @@ import (
 )
 
 type grpcBarServer struct {
-	pb.UnimplementedBarServiceServer
+	pb.BarServiceServer
 	addBar       grpctransport.Handler
 	editBar      grpctransport.Handler
 	deleteBar    grpctransport.Handler
