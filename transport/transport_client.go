@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-kit/kit/endpoint"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	ep "github.com/nightsilvertech/bar/endpoint"
@@ -24,7 +25,8 @@ func decodeResponse(ctx context.Context, response interface{}) (interface{}, err
 	return response, nil
 }
 
-func DialBarService(hostAndPort string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
+func DialBarService(host, port string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
+	hostAndPort := fmt.Sprintf("%s:%s", host, port)
 	tlsCredentials, err := credentials.NewClientTLSFromFile(
 		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
 		"0.0.0.0",

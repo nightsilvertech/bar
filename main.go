@@ -4,6 +4,7 @@ import (
 	"context"
 	oczipkin "contrib.go.opencensus.io/exporter/zipkin"
 	"crypto/tls"
+	"fmt"
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/go-kit/log/level"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -26,65 +27,65 @@ import (
 	"net/http"
 )
 
-const address = `localhost:1900`
-const grpcAddress = `localhost:9081`
-const httpAddress = `localhost:8081`
+const (
+	host     = `localhost`
+	grpcPort = `9081`
+	httpPort = `8081`
+)
 
-func ServeGRPC(service pb.BarServiceServer, serverOptions []grpc.ServerOption) error {
+type TLSPrepare struct {
+	ServerCertPath     string
+	ServerKeyPath      string
+	ServerNameOverride string
+}
+
+func (tlsp TLSPrepare) ServeGRPC(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving grpc server")
-
-	listener, err := net.Listen("tcp", grpcAddress)
+	address := fmt.Sprintf("%s:%s", host, grpcPort)
+	serverCert, err := tls.LoadX509KeyPair(tlsp.ServerCertPath, tlsp.ServerKeyPath)
+	if err != nil {
+		return err
+	}
+	serverOpts := []grpc.ServerOption{grpc.Creds(credentials.NewServerTLSFromCert(&serverCert))}
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		return err
 	}
 
-	grpcServer := grpc.NewServer(serverOptions...)
+	grpcServer := grpc.NewServer(serverOpts...)
 	pb.RegisterBarServiceServer(grpcServer, service)
 	return grpcServer.Serve(listener)
 }
 
-func ServeHTTP(service pb.BarServiceServer, clientOption []grpc.DialOption) error {
+func (tlsp TLSPrepare) ServeHTTP(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving http server")
-
-	mux := runtime.NewServeMux()
-	pb.RegisterBarServiceServer(grpc.NewServer(), service)
-	err := pb.RegisterBarServiceHandlerFromEndpoint(context.Background(), mux, address, clientOption)
+	address := fmt.Sprintf("%s:%s", host, httpPort)
+	grpcAddress := fmt.Sprintf("%s:%s", host, grpcPort)
+	clientCert, err := credentials.NewClientTLSFromFile(tlsp.ServerCertPath, tlsp.ServerNameOverride)
 	if err != nil {
 		return err
 	}
-	return http.ListenAndServe(":8081", mux)
+	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(clientCert)}
+
+	mux := runtime.NewServeMux()
+	pb.RegisterBarServiceServer(grpc.NewServer(), service)
+	err = pb.RegisterBarServiceHandlerFromEndpoint(context.Background(), mux, grpcAddress, dialOptions)
+	if err != nil {
+		return err
+	}
+	return http.ListenAndServeTLS(address, tlsp.ServerCertPath, tlsp.ServerKeyPath, mux)
 }
 
 func Serve(service pb.BarServiceServer, useTls bool) {
-	serverCert, err := tls.LoadX509KeyPair(
-		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
-		"C:\\Users\\Asus\\Desktop\\tls\\server.key")
-	if err != nil {
-		panic(err)
-	}
-
-	clientCert, err := credentials.NewClientTLSFromFile(
-		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
-		"localhost",
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	var serverOpts []grpc.ServerOption
-	var clientOpts []grpc.DialOption
-
-	if useTls {
-		serverOpts = []grpc.ServerOption{grpc.Creds(credentials.NewServerTLSFromCert(&serverCert))}
-		clientOpts = []grpc.DialOption{grpc.WithTransportCredentials(clientCert)}
-	} else {
-		serverOpts = []grpc.ServerOption{}
-		clientOpts = []grpc.DialOption{grpc.WithInsecure()}
+	tlsp := TLSPrepare{
+		ServerCertPath:     "C:\\Users\\Asus\\Desktop\\tls\\server.crt",
+		ServerKeyPath:      "C:\\Users\\Asus\\Desktop\\tls\\server.key",
+		ServerNameOverride: "0.0.0.0",
 	}
 
 	g := new(errgroup.Group)
-	g.Go(func() error { return ServeGRPC(service, serverOpts) })
-	g.Go(func() error { return ServeHTTP(service, clientOpts) })
+	g.Go(func() error { return tlsp.ServeGRPC(service) })
+	g.Go(func() error { return tlsp.ServeHTTP(service) })
 	log.Fatal(g.Wait())
 }
 
