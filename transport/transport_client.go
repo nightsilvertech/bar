@@ -78,7 +78,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			rpcMethod = `EditBar`
 		)
 
-		addBarEp = grpctransport.NewClient(
+		editBarEp = grpctransport.NewClient(
 			conn,
 			rpcName,
 			rpcMethod,
@@ -99,13 +99,13 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			rpcMethod = `DeleteBar`
 		)
 
-		addBarEp = grpctransport.NewClient(
+		deleteBarEp = grpctransport.NewClient(
 			conn,
 			rpcName,
 			rpcMethod,
 			encodeRequest,
 			decodeResponse,
-			pb.Bar{},
+			&pb.Bar{},
 			grpctransport.ClientBefore(
 				console.ContextToRequestIDMetadata(),
 				jsonwebtoken.ContextToBearerTokenMetadata(),
@@ -120,7 +120,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			rpcMethod = `GetDetailBar`
 		)
 
-		addBarEp = grpctransport.NewClient(
+		getDetailBarEp = grpctransport.NewClient(
 			conn,
 			rpcName,
 			rpcMethod,
@@ -141,7 +141,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			rpcMethod = `GetAllBar`
 		)
 
-		addBarEp = grpctransport.NewClient(
+		getAllBarEp = grpctransport.NewClient(
 			conn,
 			rpcName,
 			rpcMethod,

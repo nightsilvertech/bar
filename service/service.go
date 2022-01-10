@@ -8,7 +8,6 @@ import (
 	_repo "github.com/nightsilvertech/bar/repository"
 	_interface "github.com/nightsilvertech/bar/service/interface"
 	"github.com/nightsilvertech/utl/console"
-	uuid "github.com/satori/go.uuid"
 	"go.opencensus.io/trace"
 )
 
@@ -29,7 +28,6 @@ func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err err
 	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, bar)
 
 	// logics
-	bar.Id = uuid.NewV4().String()
 	res, err = s.repo.Data.WriteBar(ctx, bar)
 	if err != nil {
 		// error log
@@ -41,9 +39,6 @@ func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err err
 
 	// downer log info
 	level.Info(consoleLog).Log(console.LogInfo, "downer")
-
-	// span set status when success
-	span.SetStatus(trace.Status{Code: int32(trace.StatusCodeOK), Message: "successfully executed"})
 
 	return res, nil
 }

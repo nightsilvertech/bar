@@ -71,15 +71,15 @@ func (secure Secure) ServeHTTP(service pb.BarServiceServer) error {
 }
 
 func Serve(service pb.BarServiceServer) {
-	tlsp := Secure{
-		ServerCertPath:     "C:\\Users\\Asus\\Desktop\\tls\\server.crt",
-		ServerKeyPath:      "C:\\Users\\Asus\\Desktop\\tls\\server.key",
+	secure := Secure{
+		ServerCertPath:     "C:\\Users\\Asus\\Desktop\\tls\\bar\\server.crt",
+		ServerKeyPath:      "C:\\Users\\Asus\\Desktop\\tls\\bar\\server.key",
 		ServerNameOverride: "0.0.0.0",
 	}
 
 	g := new(errgroup.Group)
-	g.Go(func() error { return tlsp.ServeGRPC(service) })
-	g.Go(func() error { return tlsp.ServeHTTP(service) })
+	g.Go(func() error { return secure.ServeGRPC(service) })
+	g.Go(func() error { return secure.ServeHTTP(service) })
 	log.Fatal(g.Wait())
 }
 
