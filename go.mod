@@ -12,7 +12,6 @@ require (
 	github.com/nightsilvertech/utl v0.0.0-20211101211511-f194a6aaebf8
 	github.com/openzipkin/zipkin-go v0.2.5
 	github.com/satori/go.uuid v1.2.0
-	github.com/soheilhy/cmux v0.1.5
 	go.opencensus.io v0.23.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/grpc v1.42.0

@@ -25,22 +25,22 @@ func decodeResponse(ctx context.Context, response interface{}) (interface{}, err
 	return response, nil
 }
 
-func DialBarService(host, port string) (_interface.BarService, *grpcgoogle.ClientConn, error) {
+func DialBarService(
+	host, port string,
+	transportCred credentials.TransportCredentials,
+) (_interface.BarService, *grpcgoogle.ClientConn, error) {
 	hostAndPort := fmt.Sprintf("%s:%s", host, port)
-	tlsCredentials, err := credentials.NewClientTLSFromFile(
-		"C:\\Users\\Asus\\Desktop\\tls\\server.crt",
-		"0.0.0.0",
-	)
-	if err != nil {
-		return nil, nil, err
+	dialOptions := []grpcgoogle.DialOption{
+		grpcgoogle.WithStatsHandler(new(ocgrpc.ClientHandler)),
+	}
+	if transportCred != nil {
+		dialOptions = append(dialOptions, grpcgoogle.WithTransportCredentials(transportCred))
+	} else {
+		dialOptions = append(dialOptions, grpcgoogle.WithInsecure())
 	}
 
 	if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
 		return nil, nil, err
-	}
-	dialOptions := []grpcgoogle.DialOption{
-		grpcgoogle.WithTransportCredentials(tlsCredentials),
-		grpcgoogle.WithStatsHandler(new(ocgrpc.ClientHandler)),
 	}
 	conn, err := grpcgoogle.Dial(hostAndPort, dialOptions...)
 	if err != nil {
@@ -70,7 +70,96 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			),
 		).Endpoint()
 	}
+
+	var editBarEp endpoint.Endpoint
+	{
+		const (
+			rpcName   = `api.v1.BarService`
+			rpcMethod = `EditBar`
+		)
+
+		addBarEp = grpctransport.NewClient(
+			conn,
+			rpcName,
+			rpcMethod,
+			encodeRequest,
+			decodeResponse,
+			pb.Bar{},
+			grpctransport.ClientBefore(
+				console.ContextToRequestIDMetadata(),
+				jsonwebtoken.ContextToBearerTokenMetadata(),
+			),
+		).Endpoint()
+	}
+
+	var deleteBarEp endpoint.Endpoint
+	{
+		const (
+			rpcName   = `api.v1.BarService`
+			rpcMethod = `DeleteBar`
+		)
+
+		addBarEp = grpctransport.NewClient(
+			conn,
+			rpcName,
+			rpcMethod,
+			encodeRequest,
+			decodeResponse,
+			pb.Bar{},
+			grpctransport.ClientBefore(
+				console.ContextToRequestIDMetadata(),
+				jsonwebtoken.ContextToBearerTokenMetadata(),
+			),
+		).Endpoint()
+	}
+
+	var getDetailBarEp endpoint.Endpoint
+	{
+		const (
+			rpcName   = `api.v1.BarService`
+			rpcMethod = `GetDetailBar`
+		)
+
+		addBarEp = grpctransport.NewClient(
+			conn,
+			rpcName,
+			rpcMethod,
+			encodeRequest,
+			decodeResponse,
+			pb.Bar{},
+			grpctransport.ClientBefore(
+				console.ContextToRequestIDMetadata(),
+				jsonwebtoken.ContextToBearerTokenMetadata(),
+			),
+		).Endpoint()
+	}
+
+	var getAllBarEp endpoint.Endpoint
+	{
+		const (
+			rpcName   = `api.v1.BarService`
+			rpcMethod = `GetAllBar`
+		)
+
+		addBarEp = grpctransport.NewClient(
+			conn,
+			rpcName,
+			rpcMethod,
+			encodeRequest,
+			decodeResponse,
+			pb.Bars{},
+			grpctransport.ClientBefore(
+				console.ContextToRequestIDMetadata(),
+				jsonwebtoken.ContextToBearerTokenMetadata(),
+			),
+		).Endpoint()
+	}
+
 	return &ep.BarEndpoint{
-		AddBarEndpoint: addBarEp,
+		AddBarEndpoint:       addBarEp,
+		EditBarEndpoint:      editBarEp,
+		DeleteBarEndpoint:    deleteBarEp,
+		GetDetailBarEndpoint: getDetailBarEp,
+		GetAllBarEndpoint:    getAllBarEp,
 	}
 }

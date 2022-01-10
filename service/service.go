@@ -17,42 +17,143 @@ type service struct {
 	repo   _repo.Repository
 }
 
-func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (*pb.Bar, error) {
+func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `AddBar`
 	ctx, span := s.tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
-	span.SetStatus(trace.Status{Code: int32(trace.StatusCodeNotFound), Message: "Cache miss"})
-
+	// console log initialization
 	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
 
+	// upper log info
 	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, bar)
 
+	// logics
 	bar.Id = uuid.NewV4().String()
+	res, err = s.repo.Data.WriteBar(ctx, bar)
+	if err != nil {
+		// error log
+		level.Error(consoleLog).Log(console.LogErr, err)
+		// span set status when error
+		span.SetStatus(trace.Status{Code: int32(trace.StatusCodeInternal), Message: err.Error()})
+		return res, err
+	}
 
+	// downer log info
 	level.Info(consoleLog).Log(console.LogInfo, "downer")
 
-	return s.repo.Data.WriteBar(ctx, bar)
+	// span set status when success
+	span.SetStatus(trace.Status{Code: int32(trace.StatusCodeOK), Message: "successfully executed"})
+
+	return res, nil
 }
 
-func (s *service) EditBar(ctx context.Context, bar *pb.Bar) (*pb.Bar, error) {
+func (s *service) EditBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `EditBar`
-	return s.repo.Data.ModifyBar(ctx, bar)
+	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	defer span.End()
+
+	// console log initialization
+	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
+
+	// upper log info
+	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, bar)
+
+	// logics
+	res, err = s.repo.Data.ModifyBar(ctx, bar)
+	if err != nil {
+		// error log
+		level.Error(consoleLog).Log(console.LogErr, err)
+		// span set status when error
+		span.SetStatus(trace.Status{Code: int32(trace.StatusCodeInternal), Message: err.Error()})
+		return res, err
+	}
+
+	// downer log info
+	level.Info(consoleLog).Log(console.LogInfo, "downer")
+
+	return res, nil
 }
 
-func (s *service) DeleteBar(ctx context.Context, selects *pb.Select) (*pb.Bar, error) {
+func (s *service) DeleteBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `DeleteBar`
-	return s.repo.Data.RemoveBar(ctx, selects)
+	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	defer span.End()
+
+	// console log initialization
+	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
+
+	// upper log info
+	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, selects)
+
+	// logics
+	res, err = s.repo.Data.RemoveBar(ctx, selects)
+	if err != nil {
+		// error log
+		level.Error(consoleLog).Log(console.LogErr, err)
+		// span set status when error
+		span.SetStatus(trace.Status{Code: int32(trace.StatusCodeInternal), Message: err.Error()})
+		return res, err
+	}
+
+	// downer log info
+	level.Info(consoleLog).Log(console.LogInfo, "downer")
+
+	return res, nil
 }
 
-func (s *service) GetDetailBar(ctx context.Context, selects *pb.Select) (*pb.Bar, error) {
+func (s *service) GetDetailBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `GetDetailBar`
-	return s.repo.Data.ReadDetailBar(ctx, selects)
+	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	defer span.End()
+
+	// console log initialization
+	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
+
+	// upper log info
+	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, selects)
+
+	// logics
+	res, err = s.repo.Data.ReadDetailBar(ctx, selects)
+	if err != nil {
+		// error log
+		level.Error(consoleLog).Log(console.LogErr, err)
+		// span set status when error
+		span.SetStatus(trace.Status{Code: int32(trace.StatusCodeInternal), Message: err.Error()})
+		return res, err
+	}
+
+	// downer log info
+	level.Info(consoleLog).Log(console.LogInfo, "downer")
+
+	return res, nil
 }
 
-func (s *service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (*pb.Bars, error) {
+func (s *service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (res *pb.Bars, err error) {
 	const funcName = `GetAllBar`
-	return s.repo.Data.ReadAllBar(ctx, pagination)
+	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	defer span.End()
+
+	// console log initialization
+	ctx, consoleLog := console.Log(ctx, gvar.Logger, funcName)
+
+	// upper log info
+	level.Info(consoleLog).Log(console.LogInfo, "upper", console.LogData, pagination)
+
+	// logics
+	res, err = s.repo.Data.ReadAllBar(ctx, pagination)
+	if err != nil {
+		// error log
+		level.Error(consoleLog).Log(console.LogErr, err)
+		// span set status when error
+		span.SetStatus(trace.Status{Code: int32(trace.StatusCodeInternal), Message: err.Error()})
+		return res, err
+	}
+
+	// downer log info
+	level.Info(consoleLog).Log(console.LogInfo, "downer")
+
+	return res, nil
 }
 
 func NewService(repo _repo.Repository, tracer trace.Tracer) _interface.BarService {

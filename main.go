@@ -27,12 +27,6 @@ import (
 	"net/http"
 )
 
-const (
-	host     = `localhost`
-	grpcPort = `9081`
-	httpPort = `8081`
-)
-
 type TLSPrepare struct {
 	ServerCertPath     string
 	ServerKeyPath      string
@@ -41,7 +35,7 @@ type TLSPrepare struct {
 
 func (tlsp TLSPrepare) ServeGRPC(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving grpc server")
-	address := fmt.Sprintf("%s:%s", host, grpcPort)
+	address := fmt.Sprintf("%s:%s", constant.Host, constant.GrpcPort)
 	serverCert, err := tls.LoadX509KeyPair(tlsp.ServerCertPath, tlsp.ServerKeyPath)
 	if err != nil {
 		return err
@@ -59,8 +53,8 @@ func (tlsp TLSPrepare) ServeGRPC(service pb.BarServiceServer) error {
 
 func (tlsp TLSPrepare) ServeHTTP(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving http server")
-	address := fmt.Sprintf("%s:%s", host, httpPort)
-	grpcAddress := fmt.Sprintf("%s:%s", host, grpcPort)
+	httpAddress := fmt.Sprintf("%s:%s", constant.Host, constant.HttpPort)
+	grpcAddress := fmt.Sprintf("%s:%s", constant.Host, constant.GrpcPort)
 	clientCert, err := credentials.NewClientTLSFromFile(tlsp.ServerCertPath, tlsp.ServerNameOverride)
 	if err != nil {
 		return err
@@ -73,10 +67,10 @@ func (tlsp TLSPrepare) ServeHTTP(service pb.BarServiceServer) error {
 	if err != nil {
 		return err
 	}
-	return http.ListenAndServeTLS(address, tlsp.ServerCertPath, tlsp.ServerKeyPath, mux)
+	return http.ListenAndServeTLS(httpAddress, tlsp.ServerCertPath, tlsp.ServerKeyPath, mux)
 }
 
-func Serve(service pb.BarServiceServer, useTls bool) {
+func Serve(service pb.BarServiceServer) {
 	tlsp := TLSPrepare{
 		ServerCertPath:     "C:\\Users\\Asus\\Desktop\\tls\\server.crt",
 		ServerKeyPath:      "C:\\Users\\Asus\\Desktop\\tls\\server.key",
@@ -93,12 +87,12 @@ func main() {
 	gvar.Logger = console.CreateStdGoKitLog(constant.ServiceName, false, "C:\\Users\\Asus\\Desktop\\service.log")
 
 	reporter := httpreporter.NewReporter("http://localhost:9411/api/v2/spans")
-	localEndpoint, _ := zipkin.NewEndpoint(constant.ServiceName, ":0")
+	localEndpoint, _ := zipkin.NewEndpoint(constant.ServiceName, constant.ZipkinHostPort)
 	exporter := oczipkin.NewExporter(reporter, localEndpoint)
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	trace.RegisterExporter(exporter)
 	tracer := trace.DefaultTracer
-	hystrix.ConfigureCommand(constant.ServiceName, hystrix.CommandConfig{Timeout: 1000 * 30})
+	hystrix.ConfigureCommand(constant.ServiceName, hystrix.CommandConfig{Timeout: constant.CircuitBreakerTimout})
 
 	repositories, err := repository.NewRepository(tracer)
 	if err != nil {
@@ -107,6 +101,5 @@ func main() {
 	services := service.NewService(*repositories, tracer)
 	endpoints := ep.NewBarEndpoint(services)
 	server := transport.NewBarServer(endpoints)
-
-	Serve(server, true)
+	Serve(server)
 }
