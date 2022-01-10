@@ -27,16 +27,16 @@ import (
 	"net/http"
 )
 
-type TLSPrepare struct {
+type Secure struct {
 	ServerCertPath     string
 	ServerKeyPath      string
 	ServerNameOverride string
 }
 
-func (tlsp TLSPrepare) ServeGRPC(service pb.BarServiceServer) error {
+func (secure Secure) ServeGRPC(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving grpc server")
 	address := fmt.Sprintf("%s:%s", constant.Host, constant.GrpcPort)
-	serverCert, err := tls.LoadX509KeyPair(tlsp.ServerCertPath, tlsp.ServerKeyPath)
+	serverCert, err := tls.LoadX509KeyPair(secure.ServerCertPath, secure.ServerKeyPath)
 	if err != nil {
 		return err
 	}
@@ -51,11 +51,11 @@ func (tlsp TLSPrepare) ServeGRPC(service pb.BarServiceServer) error {
 	return grpcServer.Serve(listener)
 }
 
-func (tlsp TLSPrepare) ServeHTTP(service pb.BarServiceServer) error {
+func (secure Secure) ServeHTTP(service pb.BarServiceServer) error {
 	level.Info(gvar.Logger).Log(console.LogInfo, "serving http server")
 	httpAddress := fmt.Sprintf("%s:%s", constant.Host, constant.HttpPort)
 	grpcAddress := fmt.Sprintf("%s:%s", constant.Host, constant.GrpcPort)
-	clientCert, err := credentials.NewClientTLSFromFile(tlsp.ServerCertPath, tlsp.ServerNameOverride)
+	clientCert, err := credentials.NewClientTLSFromFile(secure.ServerCertPath, secure.ServerNameOverride)
 	if err != nil {
 		return err
 	}
@@ -67,11 +67,11 @@ func (tlsp TLSPrepare) ServeHTTP(service pb.BarServiceServer) error {
 	if err != nil {
 		return err
 	}
-	return http.ListenAndServeTLS(httpAddress, tlsp.ServerCertPath, tlsp.ServerKeyPath, mux)
+	return http.ListenAndServeTLS(httpAddress, secure.ServerCertPath, secure.ServerKeyPath, mux)
 }
 
 func Serve(service pb.BarServiceServer) {
-	tlsp := TLSPrepare{
+	tlsp := Secure{
 		ServerCertPath:     "C:\\Users\\Asus\\Desktop\\tls\\server.crt",
 		ServerKeyPath:      "C:\\Users\\Asus\\Desktop\\tls\\server.key",
 		ServerNameOverride: "0.0.0.0",
