@@ -105,7 +105,7 @@ func newGRPBarClient(conn *grpc.ClientConn) _interface.BarService {
 			rpcMethod,
 			encodeRequest,
 			decodeResponse,
-			&pb.Bar{},
+			pb.Bar{},
 			grpctransport.ClientBefore(
 				console.ContextToRequestIDMetadata(),
 				jsonwebtoken.ContextToBearerTokenMetadata(),

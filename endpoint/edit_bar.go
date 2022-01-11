@@ -17,7 +17,7 @@ func makeEditBarEndpoint(usecase _interface.BarService) endpoint.Endpoint {
 func (e BarEndpoint) EditBar(ctx context.Context, req *pb.Bar) (*pb.Bar, error) {
 	res, err := e.EditBarEndpoint(ctx, req)
 	if err != nil {
-		return res.(*pb.Bar), err
+		return &pb.Bar{}, err
 	}
 	return res.(*pb.Bar), nil
 }

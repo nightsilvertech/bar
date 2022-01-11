@@ -17,7 +17,7 @@ func makeDeleteBarEndpoint(usecase _interface.BarService) endpoint.Endpoint {
 func (e BarEndpoint) DeleteBar(ctx context.Context, req *pb.Select) (*pb.Bar, error) {
 	res, err := e.DeleteBarEndpoint(ctx, req)
 	if err != nil {
-		return res.(*pb.Bar), err
+		return &pb.Bar{}, err
 	}
 	return res.(*pb.Bar), nil
 }

@@ -17,7 +17,7 @@ func makeGetAllBarEndpoint(usecase _interface.BarService) endpoint.Endpoint {
 func (e BarEndpoint) GetAllBar(ctx context.Context, req *pb.Pagination) (*pb.Bars, error) {
 	res, err := e.GetAllBarEndpoint(ctx, req)
 	if err != nil {
-		return res.(*pb.Bars), err
+		return &pb.Bars{}, err
 	}
 	return res.(*pb.Bars), nil
 }

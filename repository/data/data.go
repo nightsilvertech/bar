@@ -86,7 +86,30 @@ func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.
 	ctx, span := d.tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
-	stmt, err := d.db.Prepare(`DELETE FROM bars WHERE id = ?`)
+	stmt, err := d.db.Prepare(`SELECT * FROM bars WHERE id = ?`)
+	if err != nil {
+		return res, errwrap.Wrap(funcName, "db.Prepare", err)
+	}
+	mutex.Lock()
+	row := stmt.QueryRowContext(ctx, req.Id)
+	mutex.Unlock()
+
+	var bar pb.Bar
+	var createdAt, updatedAt time.Time
+	err = row.Scan(
+		&bar.Id,          // id
+		&bar.Name,        // name
+		&bar.Description, // description
+		&createdAt,       // created_at
+		&updatedAt,       // updated_at
+	)
+	if err != nil {
+		return res, errwrap.Wrap(funcName, "row.Scan", err)
+	}
+	bar.CreatedAt = createdAt.Unix()
+	bar.UpdatedAt = updatedAt.Unix()
+
+	stmt, err = d.db.Prepare(`DELETE FROM bars WHERE id = ?`)
 	if err != nil {
 		return res, errwrap.Wrap(funcName, "db.Prepare", err)
 	}
@@ -100,10 +123,10 @@ func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.
 	if affected, err := result.RowsAffected(); affected == 0 || err != nil {
 		return res, errwrap.Wrap(funcName, "result.RowsAffected", err)
 	}
-	return res, nil
+	return &bar, nil
 }
 
-func (d *dataReadWrite) ReadDetailBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
+func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `ReadDetailBar`
 	ctx, span := d.tracer.StartSpan(ctx, funcName)
 	defer span.End()
@@ -113,7 +136,7 @@ func (d *dataReadWrite) ReadDetailBar(ctx context.Context, selects *pb.Select) (
 		return res, errwrap.Wrap(funcName, "db.Prepare", err)
 	}
 	mutex.Lock()
-	row := stmt.QueryRowContext(ctx, selects.Id)
+	row := stmt.QueryRowContext(ctx, req.Id)
 	mutex.Unlock()
 
 	var bar pb.Bar
