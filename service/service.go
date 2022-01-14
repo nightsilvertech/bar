@@ -12,13 +12,12 @@ import (
 )
 
 type service struct {
-	tracer trace.Tracer
 	repo   _repo.Repository
 }
 
 func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `AddBar`
-	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	// console log initialization
@@ -45,7 +44,7 @@ func (s *service) AddBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err err
 
 func (s *service) EditBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `EditBar`
-	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	// console log initialization
@@ -72,7 +71,7 @@ func (s *service) EditBar(ctx context.Context, bar *pb.Bar) (res *pb.Bar, err er
 
 func (s *service) DeleteBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `DeleteBar`
-	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	// console log initialization
@@ -99,7 +98,7 @@ func (s *service) DeleteBar(ctx context.Context, selects *pb.Select) (res *pb.Ba
 
 func (s *service) GetDetailBar(ctx context.Context, selects *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `GetDetailBar`
-	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	// console log initialization
@@ -126,7 +125,7 @@ func (s *service) GetDetailBar(ctx context.Context, selects *pb.Select) (res *pb
 
 func (s *service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (res *pb.Bars, err error) {
 	const funcName = `GetAllBar`
-	ctx, span := s.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	// console log initialization
@@ -151,9 +150,8 @@ func (s *service) GetAllBar(ctx context.Context, pagination *pb.Pagination) (res
 	return res, nil
 }
 
-func NewService(repo _repo.Repository, tracer trace.Tracer) _interface.BarService {
+func NewService(repo _repo.Repository) _interface.BarService {
 	return &service{
-		tracer: tracer,
 		repo:   repo,
 	}
 }

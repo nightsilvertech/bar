@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/nightsilvertech/bar/gvar"
 	pb "github.com/nightsilvertech/bar/protoc/api/v1"
 	_interface "github.com/nightsilvertech/bar/repository/interface"
 	"github.com/nightsilvertech/utl/errwrap"
-	"go.opencensus.io/trace"
 	"sync"
 	"time"
 )
@@ -16,13 +16,12 @@ import (
 var mutex = &sync.RWMutex{}
 
 type dataReadWrite struct {
-	tracer trace.Tracer
 	db     *sql.DB
 }
 
 func (d *dataReadWrite) WriteBar(ctx context.Context, req *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `WriteBar`
-	ctx, span := d.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	currentTime := time.Now()
@@ -53,7 +52,7 @@ func (d *dataReadWrite) WriteBar(ctx context.Context, req *pb.Bar) (res *pb.Bar,
 
 func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar, err error) {
 	const funcName = `ModifyBar`
-	ctx, span := d.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	currentTime := time.Now()
@@ -83,7 +82,7 @@ func (d *dataReadWrite) ModifyBar(ctx context.Context, req *pb.Bar) (res *pb.Bar
 
 func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `RemoveBar`
-	ctx, span := d.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	stmt, err := d.db.Prepare(`SELECT * FROM bars WHERE id = ?`)
@@ -128,7 +127,7 @@ func (d *dataReadWrite) RemoveBar(ctx context.Context, req *pb.Select) (res *pb.
 
 func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res *pb.Bar, err error) {
 	const funcName = `ReadDetailBar`
-	ctx, span := d.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	stmt, err := d.db.Prepare(`SELECT * FROM bars WHERE id = ?`)
@@ -158,7 +157,7 @@ func (d *dataReadWrite) ReadDetailBar(ctx context.Context, req *pb.Select) (res 
 
 func (d *dataReadWrite) ReadAllBar(ctx context.Context, req *pb.Pagination) (res *pb.Bars, err error) {
 	const funcName = `ReadAllBar`
-	ctx, span := d.tracer.StartSpan(ctx, funcName)
+	ctx, span := gvar.Tracer.StartSpan(ctx, funcName)
 	defer span.End()
 
 	stmt, err := d.db.Prepare(`SELECT * FROM bars ORDER BY created_at DESC`)
@@ -198,7 +197,7 @@ func (d *dataReadWrite) ReadAllBar(ctx context.Context, req *pb.Pagination) (res
 	return &bars, nil
 }
 
-func NewDataReadWriter(username, password, host, port, name string, tracer trace.Tracer) (_interface.DRW, error) {
+func NewDataReadWriter(username, password, host, port, name string) (_interface.DRW, error) {
 	const funcName = `NewDataReadWriter`
 
 	databaseUrl := fmt.Sprintf(
@@ -215,7 +214,6 @@ func NewDataReadWriter(username, password, host, port, name string, tracer trace
 	}
 
 	return &dataReadWrite{
-		tracer: tracer,
 		db:     db,
 	}, nil
 }
